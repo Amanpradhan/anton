@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     secret_key: str
     environment: str = "development"
 
+    # LLM models
+    orchestrator_model: str = "gemini-2.5-pro-preview-05-06"
+    worker_model: str = "gemini-2.0-flash"
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"

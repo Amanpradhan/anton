@@ -12,7 +12,7 @@ You send a message to Anton on Telegram:
 
 > *"Analyze payment processors entering the LATAM market"*
 
-Anton spins up a 5-agent pipeline. In ~45 seconds you get a professional intelligence report. On the dashboard you watch every agent work in real time — searches run, analysis gets critiqued, the report gets written. The whole run costs ~$0.02–0.04.
+Anton spins up a 5-agent pipeline. In ~45 seconds you get a professional intelligence report. On the dashboard you watch every agent work in real time — searches run, analysis gets critiqued, the report gets written. The whole run costs ~$0.02–0.035.
 
 ---
 

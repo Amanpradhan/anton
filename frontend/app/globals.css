@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg: #080b14;
+  --card: #0f1629;
+  --border: #1e2d4a;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: #f1f5f9;
+  font-family: system-ui, sans-serif;
 }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-ghost:hover { color: #f1f5f9; border-color: #6366f1; }
+
+.btn-danger {
+  background: transparent;
+  color: #f87171;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #7f1d1d;
+  transition: all 0.15s;
+}
+.btn-danger:hover { background: #7f1d1d22; }
+
+input, textarea, select {
+  background: #0a0f1e;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #f1f5f9;
+  padding: 8px 12px;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--primary); }
+
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-green { background: #052e1633; color: #34d399; border: 1px solid #065f4633; }
+.badge-blue  { background: #1e3a5f33; color: #60a5fa; border: 1px solid #1e40af33; }
+.badge-amber { background: #451a0333; color: #fbbf24; border: 1px solid #78350f33; }
+.badge-red   { background: #450a0a33; color: #f87171; border: 1px solid #7f1d1d33; }
+.badge-slate { background: #1e293b33; color: #94a3b8; border: 1px solid #334155; }

@@ -1,65 +1,113 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Bot, GitBranch, Play, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { api } from '@/lib/api'
+import type { Agent, Run, Workflow } from '@/types'
+
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: number | string; icon: any; color: string }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="card" style={{ padding: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>{label}</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#f1f5f9' }}>{value}</div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={20} style={{ color }} />
         </div>
-      </main>
+      </div>
     </div>
-  );
+  )
+}
+
+function statusBadge(status: string) {
+  const map: Record<string, string> = { completed: 'badge-green', running: 'badge-blue', pending: 'badge-amber', failed: 'badge-red' }
+  return <span className={`badge ${map[status] || 'badge-slate'}`}>{status}</span>
+}
+
+export default function Dashboard() {
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [runs, setRuns] = useState<Run[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      api.get<Agent[]>('/api/agents/'),
+      api.get<Workflow[]>('/api/workflows/'),
+      api.get<Run[]>('/api/runs/'),
+    ]).then(([a, w, r]) => { setAgents(a); setWorkflows(w); setRuns(r); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const totalCost = runs.reduce((s, r) => s + r.estimated_cost_usd, 0)
+
+  return (
+    <div>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: '#f1f5f9', marginBottom: 6 }}>Dashboard</h1>
+        <p style={{ color: '#64748b', fontSize: 15 }}>Your autonomous agent command center</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+        <StatCard label="Agents" value={agents.length} icon={Bot} color="#6366f1" />
+        <StatCard label="Workflows" value={workflows.length} icon={GitBranch} color="#8b5cf6" />
+        <StatCard label="Total Runs" value={runs.length} icon={Play} color="#06b6d4" />
+        <StatCard label="Total Cost" value={`$${totalCost.toFixed(4)}`} icon={TrendingUp} color="#10b981" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9' }}>Recent Runs</h2>
+            <Link href="/runs" style={{ fontSize: 13, color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>View all <ArrowRight size={13} /></Link>
+          </div>
+          {loading ? <div style={{ color: '#64748b', fontSize: 14 }}>Loading...</div> : runs.length === 0 ? (
+            <div style={{ color: '#64748b', fontSize: 14 }}>No runs yet. Trigger a workflow to get started.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {runs.slice(0, 5).map(run => (
+                <Link key={run.id} href={`/runs/${run.id}`} style={{ textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: '#0a0f1e' }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: '#f1f5f9', marginBottom: 2, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{run.input || 'No input'}</div>
+                      <div style={{ fontSize: 12, color: '#475569' }}>{run.total_tokens.toLocaleString()} tokens · ${run.estimated_cost_usd.toFixed(4)}</div>
+                    </div>
+                    {statusBadge(run.status)}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{ padding: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9', marginBottom: 20 }}>Quick Actions</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { href: '/agents/new', label: 'Create a new agent', icon: Bot, desc: 'Configure an AI agent with tools and memory' },
+              { href: '/workflows', label: 'Build a workflow', icon: GitBranch, desc: 'Connect agents into a pipeline' },
+              { href: '/templates', label: 'Browse templates', icon: Plus, desc: 'Start from a pre-built workflow' },
+              { href: '/evals', label: 'Run evaluations', icon: TrendingUp, desc: 'Score pipeline output quality' },
+            ].map(({ href, label, icon: Icon, desc }) => (
+              <Link key={href} href={href} style={{ textDecoration: 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 8, background: '#0a0f1e', border: '1px solid #1e2d4a', cursor: 'pointer' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: '#1e2d4a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={16} style={{ color: '#6366f1' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#f1f5f9' }}>{label}</div>
+                    <div style={{ fontSize: 12, color: '#475569' }}>{desc}</div>
+                  </div>
+                  <ArrowRight size={14} style={{ marginLeft: 'auto', color: '#334155' }} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

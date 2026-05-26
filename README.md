@@ -6,6 +6,19 @@ Named after the *Silicon Valley* reference.
 
 ---
 
+## Demo
+
+> **[Watch the demo →](https://your-demo-link-here)**
+
+The recording shows:
+- Dashboard overview and agent configuration UI
+- Workflow canvas with the Critic → Researcher feedback loop
+- Live Telegram conversation triggering the pipeline
+- Real-time Monitor tab as all 5 agents execute
+- Final intelligence report with Eval scores
+
+---
+
 ## What it does
 
 You send a message to Anton on Telegram:

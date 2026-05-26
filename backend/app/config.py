@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # LLM models
-    orchestrator_model: str = "gemini-2.5-pro-preview-05-06"
-    worker_model: str = "gemini-2.0-flash"
+    orchestrator_model: str = "gemini-2.5-pro"
+    worker_model: str = "gemini-2.5-flash"
 
     # LangSmith tracing (optional — set to enable)
     langchain_tracing_v2: str = "false"

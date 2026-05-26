@@ -26,4 +26,4 @@ class EvalResult(Base):
     # Pass/fail threshold (overall >= 7.0)
     passed: Mapped[bool] = mapped_column(default=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

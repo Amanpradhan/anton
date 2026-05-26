@@ -79,15 +79,33 @@ async def run_workflow(
             run.estimated_cost_usd = estimated_cost
             run.completed_at = datetime.now(timezone.utc)
 
-            for msg in final_state.get("messages", []):
-                role = getattr(msg, "type", "unknown")
-                db.add(Message(
-                    run_id=run_id,
-                    sender=role,
-                    recipient="user" if role == "ai" else "pipeline",
-                    content=msg.content,
-                    message_type="final_output" if role == "ai" else "user_input",
-                ))
+            # Save per-agent summary messages so the Monitor tab works for completed runs
+            tc = final_state.get("token_counts", {})
+            queries = final_state.get("search_queries", [])
+            research = final_state.get("research_data", [])
+            critique = final_state.get("critique", "")
+            iteration = final_state.get("iteration", 0)
+            approved = final_state.get("critique_approved", False)
+
+            agent_msgs = [
+                Message(run_id=run_id, sender="orchestrator", recipient="pipeline",
+                        content=f"Generated {len(queries)} search queries:\n" + "\n".join(f"• {q}" for q in queries),
+                        message_type="task", tokens_used=tc.get("orchestrator", 0)),
+                Message(run_id=run_id, sender="researcher", recipient="pipeline",
+                        content=f"Completed {len(research)} searches and accumulated research data.",
+                        message_type="task", tokens_used=tc.get("researcher", 0)),
+                Message(run_id=run_id, sender="analyst", recipient="pipeline",
+                        content="Synthesized research into a structured 6-section analysis.",
+                        message_type="task", tokens_used=tc.get("analyst", 0)),
+                Message(run_id=run_id, sender="critic", recipient="pipeline",
+                        content=f"Quality review (iteration {iteration}): {'✓ Approved' if approved else '✗ Sent back for revision'}\n{critique[:400]}",
+                        message_type="task", tokens_used=tc.get("critic", 0)),
+                Message(run_id=run_id, sender="reporter", recipient="pipeline",
+                        content="Generated final intelligence report and Telegram summary.",
+                        message_type="final_output", tokens_used=tc.get("reporter", 0)),
+            ]
+            for m in agent_msgs:
+                db.add(m)
 
             await db.commit()
 

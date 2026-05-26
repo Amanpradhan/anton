@@ -149,7 +149,17 @@ async def get_eval_result(run_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(EvalResult).where(EvalResult.run_id == run_id)
     )
-    eval_result = result.scalar_one_or_none()
-    if not eval_result:
-        return {"message": "Eval not yet complete or run not found"}
-    return eval_result
+    r = result.scalar_one_or_none()
+    if not r:
+        return None
+    return {
+        "run_id": r.run_id,
+        "overall_score": r.overall_score,
+        "specificity_score": r.specificity_score,
+        "completeness_score": r.completeness_score,
+        "accuracy_risk_score": r.accuracy_risk_score,
+        "usefulness_score": r.usefulness_score,
+        "passed": r.passed,
+        "feedback": r.feedback,
+        "created_at": r.created_at,
+    }

@@ -10,6 +10,7 @@ Responsibilities:
 - Publish events to Redis throughout
 """
 
+import asyncio
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -64,7 +65,11 @@ async def run_workflow(
     }
 
     try:
-        final_state = await compiled_graph.ainvoke(initial_state)
+        # 5-minute hard timeout — prevents silent hangs on Gemini/Tavily API issues
+        final_state = await asyncio.wait_for(
+            compiled_graph.ainvoke(initial_state),
+            timeout=300,
+        )
 
         total_tokens = sum(final_state.get("token_counts", {}).values())
         estimated_cost = (total_tokens / 1000) * COST_PER_1K_TOKENS_USD

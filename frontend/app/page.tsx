@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Bot, GitBranch, Play, TrendingUp, Plus, ArrowRight } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [runs, setRuns] = useState<Run[]>([])
   const [loading, setLoading] = useState(true)
 
+  const runsRef = useRef<Run[]>([])
+  runsRef.current = runs
+
   useEffect(() => {
     const fetchAll = () => Promise.all([
       api.get<Agent[]>('/api/agents/'),
@@ -42,8 +45,16 @@ export default function Dashboard() {
       .catch(() => setLoading(false))
 
     fetchAll()
-    const interval = setInterval(fetchAll, 5000)
-    return () => clearInterval(interval)
+
+    // Adaptive polling: 2s when any run is active, 10s when all idle
+    let timeoutId: ReturnType<typeof setTimeout>
+    const poll = async () => {
+      await fetchAll()
+      const hasActive = runsRef.current.some(r => r.status === 'running' || r.status === 'pending')
+      timeoutId = setTimeout(poll, hasActive ? 2000 : 10000)
+    }
+    timeoutId = setTimeout(poll, 2000)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   const totalCost = runs.reduce((s, r) => s + r.estimated_cost_usd, 0)

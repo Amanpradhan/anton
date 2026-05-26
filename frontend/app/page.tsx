@@ -34,12 +34,16 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
+    const fetchAll = () => Promise.all([
       api.get<Agent[]>('/api/agents/'),
       api.get<Workflow[]>('/api/workflows/'),
       api.get<Run[]>('/api/runs/'),
     ]).then(([a, w, r]) => { setAgents(a); setWorkflows(w); setRuns(r); setLoading(false) })
       .catch(() => setLoading(false))
+
+    fetchAll()
+    const interval = setInterval(fetchAll, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const totalCost = runs.reduce((s, r) => s + r.estimated_cost_usd, 0)

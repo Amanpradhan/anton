@@ -85,14 +85,37 @@ export default function RunDetailPage() {
     api.get<Run>(`/api/runs/${id}`).then(setRun)
   }, [id])
 
+  // Refresh run data when WebSocket signals completion
   useEffect(() => {
     if (done) api.get<Run>(`/api/runs/${id}`).then(setRun)
   }, [id, done])
 
+  // Polling fallback: refresh every 4s until run is terminal (handles late navigation)
   useEffect(() => {
-    api.get<any>(`/api/evals/results/${id}`)
-      .then(data => { if (data && data.overall_score !== undefined) setEvalResult(data) })
-      .catch(() => {})
+    if (run?.status === 'completed' || run?.status === 'failed') return
+    const interval = setInterval(() => {
+      api.get<Run>(`/api/runs/${id}`).then(setRun)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [id, run?.status])
+
+  // Fetch eval, retry until available (eval runs async after report)
+  useEffect(() => {
+    let cancelled = false
+    const fetchEval = () => {
+      api.get<any>(`/api/evals/results/${id}`)
+        .then(data => {
+          if (cancelled) return
+          if (data && data.overall_score !== undefined) {
+            setEvalResult(data)
+          } else if (!evalResult) {
+            setTimeout(fetchEval, 5000) // retry until eval is ready
+          }
+        })
+        .catch(() => {})
+    }
+    fetchEval()
+    return () => { cancelled = true }
   }, [id])
 
   const statusColor: Record<string, string> = { completed: '#10b981', running: '#6366f1', pending: '#f59e0b', failed: '#f87171' }

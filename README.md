@@ -2,7 +2,7 @@
 
 > Autonomous multi-agent competitive intelligence platform. Configure teams of AI agents that research, analyze, and deliver insights — while you watch them collaborate in real time.
 
-Named after the *Silicon Valley* reference. Built as the Yuno AI Engineer hiring challenge.
+Named after the *Silicon Valley* reference.
 
 ---
 

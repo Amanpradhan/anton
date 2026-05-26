@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Play, ArrowRight } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -16,11 +16,21 @@ export default function RunsPage() {
   const [runs, setRuns] = useState<Run[]>([])
   const [loading, setLoading] = useState(true)
 
+  const runsRef = useRef<Run[]>([])
+  runsRef.current = runs
+
   useEffect(() => {
-    api.get<Run[]>('/api/runs/').then(setRuns).finally(() => setLoading(false))
-    // Poll every 5s for running pipelines
-    const interval = setInterval(() => api.get<Run[]>('/api/runs/').then(setRuns), 5000)
-    return () => clearInterval(interval)
+    api.get<Run[]>('/api/runs/').then(r => { setRuns(r); setLoading(false) })
+
+    let timeoutId: ReturnType<typeof setTimeout>
+    const poll = async () => {
+      const r = await api.get<Run[]>('/api/runs/')
+      setRuns(r)
+      const hasActive = r.some((run: Run) => run.status === 'running' || run.status === 'pending')
+      timeoutId = setTimeout(poll, hasActive ? 2000 : 10000)
+    }
+    timeoutId = setTimeout(poll, 2000)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   return (

@@ -23,8 +23,9 @@ from app.runtime.agents.evaluator import evaluate_report
 from app.runtime.events import publish_event
 from app.runtime.graph import AgentState, compiled_graph
 
-# Gemini 2.0 Flash pricing (per 1K tokens, approximate)
-COST_PER_1K_TOKENS_USD = 0.000075
+# Blended Gemini 2.5 Flash pricing (input $0.30/1M + output $2.50/1M, ~80/20 split ≈ $0.74/1M)
+# Orchestrator uses 2.5 Pro ($1.25/$10 per 1M) but is a small fraction of total tokens
+COST_PER_1K_TOKENS_USD = 0.00074
 
 
 async def run_workflow(

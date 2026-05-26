@@ -29,8 +29,14 @@ async def publish_event(
         "tokens_used": tokens_used,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    payload = json.dumps(event)
     r = aioredis.from_url(settings.redis_url, decode_responses=True)
     try:
-        await r.publish(f"run:{run_id}", json.dumps(event))
+        # Buffer event in a list so late WebSocket connections can replay missed events
+        buf_key = f"run:events:{run_id}"
+        await r.rpush(buf_key, payload)
+        await r.expire(buf_key, 3600)  # keep for 1 hour then auto-clean
+        # Also publish for any already-connected WebSocket subscribers
+        await r.publish(f"run:{run_id}", payload)
     finally:
         await r.aclose()

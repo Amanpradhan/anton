@@ -23,19 +23,35 @@ async def run_events(websocket: WebSocket, run_id: str):
     await websocket.accept()
 
     r = aioredis.from_url(settings.redis_url, decode_responses=True)
+
+    # Replay any events that were published before this WebSocket connected
+    # (fixes the race condition where the pipeline starts before the browser opens the run page)
+    buffered = await r.lrange(f"run:events:{run_id}", 0, -1)
+    already_done = False
+    for data in buffered:
+        await websocket.send_text(data)
+        try:
+            parsed = json.loads(data)
+            if parsed.get("event_type") in ("complete", "error"):
+                already_done = True
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    if already_done:
+        await r.aclose()
+        return
+
     pubsub = r.pubsub()
     await pubsub.subscribe(f"run:{run_id}")
 
     try:
         async for message in pubsub.listen():
-            # pubsub.listen() yields control/subscribe confirmation messages too
             if message["type"] != "message":
                 continue
 
             data = message["data"]
             await websocket.send_text(data)
 
-            # Auto-close WebSocket when run finishes or errors
             try:
                 parsed = json.loads(data)
                 if parsed.get("event_type") in ("complete", "error"):

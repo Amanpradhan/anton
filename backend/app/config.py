@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     orchestrator_model: str = "gemini-2.5-pro-preview-05-06"
     worker_model: str = "gemini-2.0-flash"
 
+    # LangSmith tracing (optional — set to enable)
+    langchain_tracing_v2: str = "false"
+    langchain_api_key: str = ""
+    langchain_project: str = "anton"
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"

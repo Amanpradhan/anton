@@ -6,7 +6,7 @@ import { api } from '@/lib/api'
 
 const AVAILABLE_TOOLS = ['web_search', 'summarize', 'calculator', 'code_interpreter']
 const AVAILABLE_CHANNELS = ['telegram', 'slack', 'whatsapp']
-const MODELS = ['gemini-2.0-flash', 'gemini-2.5-pro-preview-05-06', 'gemini-1.5-pro', 'gemini-1.5-flash']
+const MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash']
 
 export default function NewAgentPage() {
   const router = useRouter()
@@ -15,7 +15,7 @@ export default function NewAgentPage() {
     name: '',
     role: '',
     system_prompt: '',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     temperature: 0.7,
     tools: [] as string[],
     channels: [] as string[],
@@ -130,7 +130,31 @@ export default function NewAgentPage() {
             </div>
             <div>
               <label>Memory Window</label>
-              <input type="number" value={form.memory_window} onChange={e => setForm(p => ({ ...p, memory_window: parseInt(e.target.value) }))} min={1} max={100} />
+              <input type="number" value={form.memory_window} onChange={e => setForm(p => ({ ...p, memory_window: parseInt(e.target.value) }))} min={1} max={100} disabled={!form.memory_enabled} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              onClick={() => setForm(p => ({ ...p, memory_enabled: !p.memory_enabled }))}
+              style={{
+                width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
+                background: form.memory_enabled ? '#6366f1' : '#1e2d4a',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, left: form.memory_enabled ? 21 : 3,
+                width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                transition: 'left 0.2s',
+              }} />
+            </button>
+            <div>
+              <div style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>Memory</div>
+              <div style={{ fontSize: 12, color: '#475569' }}>
+                {form.memory_enabled ? `Retain last ${form.memory_window} messages across turns` : 'Disabled — agent has no context between turns'}
+              </div>
             </div>
           </div>
 

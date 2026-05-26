@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Circle, CheckCircle, XCircle, Zap } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { api } from '@/lib/api'
 import { useRunEvents } from '@/lib/hooks/useWebSocket'
 import type { Run, RunEvent } from '@/types'
@@ -20,7 +21,6 @@ const AGENT_COLORS: Record<string, string> = {
 function EventRow({ event }: { event: RunEvent }) {
   const color = AGENT_COLORS[event.agent] || '#64748b'
   const isError = event.event_type === 'error'
-  const isComplete = event.event_type === 'complete'
 
   return (
     <div style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #1e2d4a' }}>
@@ -31,10 +31,27 @@ function EventRow({ event }: { event: RunEvent }) {
           <span style={{ fontSize: 11, color: '#334155', background: '#1e2d4a', padding: '1px 6px', borderRadius: 4 }}>{event.event_type}</span>
           {event.tokens_used > 0 && <span style={{ fontSize: 11, color: '#475569' }}>{event.tokens_used} tokens</span>}
         </div>
-        <div style={{ fontSize: 13, color: isError ? '#f87171' : '#94a3b8', lineHeight: 1.5 }}>{event.content}</div>
+        <div style={{ fontSize: 13, color: isError ? '#f87171' : '#94a3b8', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{event.content}</div>
       </div>
       <div style={{ fontSize: 11, color: '#334155', whiteSpace: 'nowrap', flexShrink: 0 }}>
         {new Date(event.timestamp).toLocaleTimeString()}
+      </div>
+    </div>
+  )
+}
+
+function MessageRow({ msg }: { msg: any }) {
+  const color = AGENT_COLORS[msg.sender] || '#64748b'
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #1e2d4a' }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, marginTop: 5, flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color }}>{msg.sender}</span>
+          <span style={{ fontSize: 11, color: '#334155', background: '#1e2d4a', padding: '1px 6px', borderRadius: 4 }}>{msg.message_type}</span>
+          {msg.tokens_used > 0 && <span style={{ fontSize: 11, color: '#475569' }}>{msg.tokens_used} tokens</span>}
+        </div>
+        <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.content}</div>
       </div>
     </div>
   )
@@ -60,17 +77,27 @@ export default function RunDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [run, setRun] = useState<Run | null>(null)
+  const [evalResult, setEvalResult] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'monitor' | 'report' | 'eval'>('monitor')
   const { events, connected, done, totalTokens } = useRunEvents(id)
 
   useEffect(() => {
     api.get<Run>(`/api/runs/${id}`).then(setRun)
-    // Refresh run data once pipeline completes
+  }, [id])
+
+  useEffect(() => {
     if (done) api.get<Run>(`/api/runs/${id}`).then(setRun)
   }, [id, done])
 
+  useEffect(() => {
+    api.get<any>(`/api/evals/results/${id}`)
+      .then(data => { if (data && data.overall_score !== undefined) setEvalResult(data) })
+      .catch(() => {})
+  }, [id])
+
   const statusColor: Record<string, string> = { completed: '#10b981', running: '#6366f1', pending: '#f59e0b', failed: '#f87171' }
-  const evalResult = (run as any)?.eval_result
+  const messages: any[] = (run as any)?.messages || []
+  const isCompleted = run?.status === 'completed' || run?.status === 'failed'
 
   return (
     <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
@@ -100,7 +127,7 @@ export default function RunDetailPage() {
       <div style={{ display: 'flex', gap: 20, marginBottom: 16, padding: '12px 16px', background: '#0f1629', borderRadius: 10, border: '1px solid #1e2d4a', fontSize: 13 }}>
         <span style={{ color: '#64748b' }}>Tokens: <strong style={{ color: '#f1f5f9' }}>{(run?.total_tokens || totalTokens).toLocaleString()}</strong></span>
         <span style={{ color: '#64748b' }}>Cost: <strong style={{ color: '#f1f5f9' }}>${(run?.estimated_cost_usd || 0).toFixed(4)}</strong></span>
-        <span style={{ color: '#64748b' }}>Events: <strong style={{ color: '#f1f5f9' }}>{events.length}</strong></span>
+        <span style={{ color: '#64748b' }}>Events: <strong style={{ color: '#f1f5f9' }}>{events.length || messages.length}</strong></span>
         <span style={{ color: '#64748b' }}>Source: <strong style={{ color: '#f1f5f9' }}>{run?.trigger_source || '—'}</strong></span>
       </div>
 
@@ -118,12 +145,15 @@ export default function RunDetailPage() {
       <div className="card" style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         {activeTab === 'monitor' && (
           <div>
-            {events.length === 0 ? (
-              <div style={{ color: '#64748b', fontSize: 14 }}>
-                {connected ? 'Waiting for agent activity...' : 'No live events. Run is not active or already completed.'}
-              </div>
-            ) : (
+            {/* Live events take priority; fall back to DB messages for completed runs */}
+            {events.length > 0 ? (
               events.map((e, i) => <EventRow key={i} event={e} />)
+            ) : messages.length > 0 ? (
+              messages.map((m, i) => <MessageRow key={i} msg={m} />)
+            ) : (
+              <div style={{ color: '#64748b', fontSize: 14 }}>
+                {isCompleted ? 'No agent events recorded for this run.' : 'Waiting for agent activity...'}
+              </div>
             )}
           </div>
         )}
@@ -131,9 +161,24 @@ export default function RunDetailPage() {
         {activeTab === 'report' && (
           <div>
             {run?.output ? (
-              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, fontFamily: 'system-ui' }}>
-                {run.output}
-              </pre>
+              <div style={{ fontSize: 14, color: '#e2e8f0', lineHeight: 1.8 }} className="prose-dark">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', marginBottom: 12, marginTop: 24 }}>{children}</h1>,
+                    h2: ({ children }) => <h2 style={{ fontSize: 18, fontWeight: 600, color: '#f1f5f9', marginBottom: 10, marginTop: 20 }}>{children}</h2>,
+                    h3: ({ children }) => <h3 style={{ fontSize: 15, fontWeight: 600, color: '#cbd5e1', marginBottom: 8, marginTop: 16 }}>{children}</h3>,
+                    p: ({ children }) => <p style={{ marginBottom: 12, color: '#94a3b8' }}>{children}</p>,
+                    strong: ({ children }) => <strong style={{ color: '#e2e8f0', fontWeight: 600 }}>{children}</strong>,
+                    li: ({ children }) => <li style={{ marginBottom: 4, color: '#94a3b8' }}>{children}</li>,
+                    ul: ({ children }) => <ul style={{ paddingLeft: 20, marginBottom: 12 }}>{children}</ul>,
+                    ol: ({ children }) => <ol style={{ paddingLeft: 20, marginBottom: 12 }}>{children}</ol>,
+                    hr: () => <hr style={{ border: 'none', borderTop: '1px solid #1e2d4a', margin: '20px 0' }} />,
+                    code: ({ children }) => <code style={{ background: '#1e2d4a', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: '#06b6d4' }}>{children}</code>,
+                  }}
+                >
+                  {run.output}
+                </ReactMarkdown>
+              </div>
             ) : (
               <div style={{ color: '#64748b', fontSize: 14 }}>
                 {run?.status === 'running' || run?.status === 'pending' ? 'Report will appear here when the pipeline completes...' : 'No report generated.'}
@@ -145,11 +190,11 @@ export default function RunDetailPage() {
         {activeTab === 'eval' && (
           <div style={{ maxWidth: 480 }}>
             <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>
-              LLM-as-judge quality scores for this run's report
+              LLM-as-judge quality scores for this run&apos;s report
             </div>
             {!evalResult ? (
               <div style={{ color: '#64748b', fontSize: 14 }}>
-                Evaluation runs automatically after the report is generated. Check back shortly.
+                {isCompleted ? 'No evaluation found for this run.' : 'Evaluation runs automatically after the report is generated. Check back shortly.'}
               </div>
             ) : (
               <>

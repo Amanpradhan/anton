@@ -6,6 +6,8 @@ import {
   Background,
   Controls,
   MiniMap,
+  Handle,
+  Position,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -36,11 +38,13 @@ function AgentNode({ data }: { data: { label: string; role: string; color: strin
       minWidth: 160,
       boxShadow: `0 0 20px ${data.color}33`,
     }}>
+      <Handle type="target" position={Position.Top} style={{ background: data.color, border: 'none', width: 8, height: 8 }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: data.color }} />
         <div style={{ fontWeight: 600, fontSize: 14, color: '#f1f5f9' }}>{data.label}</div>
       </div>
       <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>{data.role}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: data.color, border: 'none', width: 8, height: 8 }} />
     </div>
   )
 }

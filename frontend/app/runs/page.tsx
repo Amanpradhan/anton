@@ -27,7 +27,7 @@ export default function RunsPage() {
       const r = await api.get<Run[]>('/api/runs/')
       setRuns(r)
       const hasActive = r.some((run: Run) => run.status === 'running' || run.status === 'pending')
-      timeoutId = setTimeout(poll, hasActive ? 2000 : 10000)
+      timeoutId = setTimeout(poll, hasActive ? 2000 : 3000)
     }
     timeoutId = setTimeout(poll, 2000)
     return () => clearTimeout(timeoutId)

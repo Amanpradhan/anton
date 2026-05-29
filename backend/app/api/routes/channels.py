@@ -71,7 +71,7 @@ async def telegram_webhook(
         created_at=datetime.now(timezone.utc),
     )
     db.add(run)
-    await db.flush()
+    await db.commit()
     run_id = run.id
 
     # Execute pipeline + send reply in the background

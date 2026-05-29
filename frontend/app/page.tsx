@@ -46,12 +46,12 @@ export default function Dashboard() {
 
     fetchAll()
 
-    // Adaptive polling: 2s when any run is active, 10s when all idle
+    // Adaptive polling: 2s when any run is active, 3s when all idle
     let timeoutId: ReturnType<typeof setTimeout>
     const poll = async () => {
       await fetchAll()
       const hasActive = runsRef.current.some(r => r.status === 'running' || r.status === 'pending')
-      timeoutId = setTimeout(poll, hasActive ? 2000 : 10000)
+      timeoutId = setTimeout(poll, hasActive ? 2000 : 3000)
     }
     timeoutId = setTimeout(poll, 2000)
     return () => clearTimeout(timeoutId)

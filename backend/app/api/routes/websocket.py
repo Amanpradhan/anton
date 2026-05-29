@@ -3,13 +3,15 @@ WebSocket endpoint for real-time run monitoring.
 
 Flow:
   Frontend connects → ws://localhost:8000/ws/runs/{run_id}
-  Backend subscribes to Redis channel `run:{run_id}`
-  Each agent event published to Redis is forwarded to the WebSocket client
+  1. Subscribe to Redis pubsub FIRST (no event gap)
+  2. Replay buffered events from Redis list (catch-up)
+  3. Forward live pubsub messages as they arrive
+  4. Send heartbeat ping every 15s of silence to keep connection alive
   Connection closes when the run completes or client disconnects
 """
 
-import asyncio
 import json
+import time
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -24,9 +26,12 @@ async def run_events(websocket: WebSocket, run_id: str):
     await websocket.accept()
 
     r = aioredis.from_url(settings.redis_url, decode_responses=True)
+    pubsub = r.pubsub()
 
-    # Replay any events that were published before this WebSocket connected
-    # (fixes the race condition where the pipeline starts before the browser opens the run page)
+    # Subscribe FIRST — no events can be missed after this point
+    await pubsub.subscribe(f"run:{run_id}")
+
+    # Replay buffered events (published before this WebSocket connected)
     buffered = await r.lrange(f"run:events:{run_id}", 0, -1)
     already_done = False
     for data in buffered:
@@ -39,29 +44,29 @@ async def run_events(websocket: WebSocket, run_id: str):
             pass
 
     if already_done:
+        await pubsub.unsubscribe(f"run:{run_id}")
+        await pubsub.aclose()
         await r.aclose()
         return
 
-    pubsub = r.pubsub()
-    await pubsub.subscribe(f"run:{run_id}")
+    # Forward live events with a time-based heartbeat every 15s
+    last_heartbeat = time.monotonic()
 
     try:
         while True:
-            # Poll for a message with a 15s timeout, then send a heartbeat to keep the connection alive
-            try:
-                message = await asyncio.wait_for(
-                    pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1),
-                    timeout=15,
-                )
-            except asyncio.TimeoutError:
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+
+            now = time.monotonic()
+            if now - last_heartbeat >= 15:
                 await websocket.send_text(json.dumps({"event_type": "ping"}))
-                continue
+                last_heartbeat = now
 
             if message is None:
                 continue
 
             data = message["data"]
             await websocket.send_text(data)
+            last_heartbeat = now  # reset heartbeat on any real message
 
             try:
                 parsed = json.loads(data)

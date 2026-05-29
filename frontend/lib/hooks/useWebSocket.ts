@@ -10,6 +10,7 @@ export function useRunEvents(runId: string | null) {
   const [done, setDone] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const doneRef = useRef(false)
+  const seenRef = useRef<Set<string>>(new Set())
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const connect = useCallback(() => {
@@ -23,9 +24,15 @@ export function useRunEvents(runId: string | null) {
     ws.onmessage = (e) => {
       try {
         const event: RunEvent = JSON.parse(e.data)
-        // Ignore heartbeat pings
         if (event.event_type === 'ping') return
+
+        // Deduplicate — buffer replay on reconnect resends all past events
+        const key = `${event.timestamp}-${event.agent}-${event.event_type}-${event.content?.slice(0, 40)}`
+        if (seenRef.current.has(key)) return
+        seenRef.current.add(key)
+
         setEvents((prev) => [...prev, event])
+
         if (event.event_type === 'complete' || event.event_type === 'error') {
           doneRef.current = true
           setDone(true)
@@ -52,6 +59,7 @@ export function useRunEvents(runId: string | null) {
     connect()
     return () => {
       doneRef.current = false
+      seenRef.current = new Set()
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
       wsRef.current?.close()
       wsRef.current = null

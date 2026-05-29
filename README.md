@@ -8,7 +8,7 @@ Named after the *Silicon Valley* reference.
 
 ## Demo
 
-> **[Watch the demo →](https://your-demo-link-here)**
+> **[Watch the demo →](https://www.loom.com/share/5d394b36906b447780f2bd1ab800de4a)**
 
 The recording shows:
 - Dashboard overview and agent configuration UI
@@ -99,7 +99,7 @@ Telegram msg
 
 | Agent | Model | Role |
 |-------|-------|------|
-| **Orchestrator** | Gemini 2.5 Pro | Decomposes request into 5 targeted search queries |
+| **Orchestrator** | Gemini 2.5 Flash | Decomposes request into 5 targeted search queries |
 | **Researcher** | Gemini 2.0 Flash | Runs parallel Tavily searches, accumulates data |
 | **Analyst** | Gemini 2.0 Flash | Synthesizes raw data into 6-section structured analysis |
 | **Critic** | Gemini 2.0 Flash | Quality gate: scores analysis 1–10, approves or rejects |
@@ -116,7 +116,7 @@ The Critic → Researcher feedback loop is what makes this genuinely multi-agent
 |-------|--------|-----|
 | Backend | Python + FastAPI | Best AI ecosystem, async-native, automatic OpenAPI docs |
 | AI Framework | **LangGraph** | Stateful graphs + conditional edges + cycles — see below |
-| LLM | Gemini 2.5 Pro / 2.0 Flash | Cost-optimized: heavy reasoning only where needed |
+| LLM | Gemini 2.5 Flash / 2.0 Flash | Cost-optimized: structured output on Flash, no Pro overhead |
 | Frontend | Next.js + React Flow | Visual workflow canvas, App Router, TypeScript |
 | Database | PostgreSQL | Production-grade, rich querying for run/eval history |
 | Message Bus | Redis Pub/Sub | Async event streaming to WebSocket without coupling |

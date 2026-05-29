@@ -149,7 +149,7 @@ export default function RunDetailPage() {
       {/* Stats bar */}
       <div style={{ display: 'flex', gap: 20, marginBottom: 16, padding: '12px 16px', background: '#0f1629', borderRadius: 10, border: '1px solid #1e2d4a', fontSize: 13 }}>
         <span style={{ color: '#64748b' }}>Tokens: <strong style={{ color: '#f1f5f9' }}>{(run?.total_tokens || totalTokens).toLocaleString()}</strong></span>
-        <span style={{ color: '#64748b' }}>Cost: <strong style={{ color: '#f1f5f9' }}>${(run?.estimated_cost_usd || 0).toFixed(4)}</strong></span>
+        <span style={{ color: '#64748b' }}>Cost: <strong style={{ color: '#f1f5f9' }}>${(run?.estimated_cost_usd || ((run?.total_tokens || totalTokens) / 1000 * 0.00107)).toFixed(4)}</strong></span>
         <span style={{ color: '#64748b' }}>Events: <strong style={{ color: '#f1f5f9' }}>{events.length || messages.length}</strong></span>
         <span style={{ color: '#64748b' }}>Source: <strong style={{ color: '#f1f5f9' }}>{run?.trigger_source || '—'}</strong></span>
       </div>

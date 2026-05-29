@@ -1,11 +1,14 @@
 import asyncio
+import json
 import uuid
 from datetime import datetime, timezone
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db.database import get_db
 from app.models.message import Message
 from app.models.run import Run, RunStatus
@@ -62,6 +65,17 @@ async def create_run(
     )
 
     return run
+
+
+@router.get("/{run_id}/events")
+async def get_run_events(run_id: str):
+    """Return all buffered events for a run from Redis. Used as WebSocket fallback."""
+    r = aioredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        raw = await r.lrange(f"run:events:{run_id}", 0, -1)
+        return [json.loads(e) for e in raw]
+    finally:
+        await r.aclose()
 
 
 @router.get("/{run_id}", response_model=RunResponse)

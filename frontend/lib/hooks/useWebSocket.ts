@@ -32,7 +32,9 @@ export function useRunEvents(runId: string | null) {
           if (stateRef.current.seen.has(key)) continue
           stateRef.current.seen.add(key)
           newEvents.push(event)
-          if (event.event_type === 'complete' || event.event_type === 'error') {
+          // Only the system agent signals pipeline termination.
+          // Individual agents also emit event_type="complete" for their own step.
+          if (event.agent === 'system' && (event.event_type === 'complete' || event.event_type === 'error')) {
             stateRef.current.done = true
             setDone(true)
           }

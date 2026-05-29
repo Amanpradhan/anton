@@ -38,7 +38,7 @@ async def run_events(websocket: WebSocket, run_id: str):
         await websocket.send_text(data)
         try:
             parsed = json.loads(data)
-            if parsed.get("event_type") in ("complete", "error"):
+            if parsed.get("agent") == "system" and parsed.get("event_type") in ("complete", "error"):
                 already_done = True
         except (json.JSONDecodeError, AttributeError):
             pass
@@ -70,7 +70,8 @@ async def run_events(websocket: WebSocket, run_id: str):
 
             try:
                 parsed = json.loads(data)
-                if parsed.get("event_type") in ("complete", "error"):
+                # Only the system agent signals pipeline termination
+                if parsed.get("agent") == "system" and parsed.get("event_type") in ("complete", "error"):
                     break
             except (json.JSONDecodeError, AttributeError):
                 pass

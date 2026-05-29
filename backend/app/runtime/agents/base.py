@@ -9,9 +9,9 @@ from app.config import settings
 
 
 def get_orchestrator_llm() -> ChatGoogleGenerativeAI:
-    """Gemini 2.5 Pro — used for the Orchestrator that needs the most reasoning."""
+    """Gemini 2.5 Flash — query generation is structured output, not deep reasoning."""
     return ChatGoogleGenerativeAI(
-        model=settings.orchestrator_model,
+        model=settings.worker_model,
         google_api_key=settings.gemini_api_key,
         temperature=0.3,  # Lower = more deterministic planning
     )

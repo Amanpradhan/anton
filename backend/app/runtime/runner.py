@@ -122,8 +122,8 @@ async def run_workflow(
             tokens_used=total_tokens,
         )
 
-        # Run evaluation in the background (non-blocking — don't await)
-        await _run_evaluation(run_id, user_input, report)
+        # Fire evaluation as a true background task — don't block the Telegram reply
+        asyncio.create_task(_run_evaluation(run_id, user_input, report))
 
         return final_state.get("final_output", "Analysis complete.")
 

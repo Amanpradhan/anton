@@ -8,6 +8,7 @@ Flow:
   Connection closes when the run completes or client disconnects
 """
 
+import asyncio
 import json
 
 import redis.asyncio as aioredis
@@ -45,8 +46,18 @@ async def run_events(websocket: WebSocket, run_id: str):
     await pubsub.subscribe(f"run:{run_id}")
 
     try:
-        async for message in pubsub.listen():
-            if message["type"] != "message":
+        while True:
+            # Poll for a message with a 15s timeout, then send a heartbeat to keep the connection alive
+            try:
+                message = await asyncio.wait_for(
+                    pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1),
+                    timeout=15,
+                )
+            except asyncio.TimeoutError:
+                await websocket.send_text(json.dumps({"event_type": "ping"}))
+                continue
+
+            if message is None:
                 continue
 
             data = message["data"]
